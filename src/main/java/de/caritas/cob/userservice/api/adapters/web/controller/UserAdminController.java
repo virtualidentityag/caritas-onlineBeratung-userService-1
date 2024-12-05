@@ -80,8 +80,7 @@ public class UserAdminController implements UseradminApi {
 
   @Override
   public ResponseEntity<Void> deactivateConsultantTwoFactorAuth(
-      @NonNull @Valid String consultantId
-  ){
+      @PathVariable String consultantId) {
     ConsultantAdminResponseDTO consultantDTO =
         this.consultantAdminFacade.findConsultant(consultantId);
     identityManager.deleteOneTimePassword(consultantDTO.getEmbedded().getUsername());

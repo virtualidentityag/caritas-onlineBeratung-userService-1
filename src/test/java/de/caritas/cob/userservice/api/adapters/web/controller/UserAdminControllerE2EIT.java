@@ -791,14 +791,51 @@ class UserAdminControllerE2EIT {
   }
 
   @Test
-  @WithMockUser(authorities = {AuthorityValue.TENANT_ADMIN})
-  void deactivateConsultantTwoFactorAuth_Should_returnOk_When_requiredConsultantIsGiven() throws Exception {
-    //given
+  @WithMockUser(authorities = {AuthorityValue.CONSULTANT_CREATE})
+  void deactivateConsultantTwoFactorAuth_Should_returnOk_When_requiredConsultantIsGiven()
+      throws Exception {
+    // given
     String consultantId = givenNewConsultantIsCreated();
 
-    //when
-    this.mockMvc.perform(delete(DEACTIVATE_CONSULTANT_2FA + consultantId)).andExpect(status().isOk());
-
+    // when
+    this.mockMvc
+        .perform(
+            delete(DEACTIVATE_CONSULTANT_2FA + consultantId)
+        ).andExpect(status().isOk());
   }
 
+  @Test
+  @WithMockUser(authorities = {AuthorityValue.CONSULTANT_CREATE})
+  void deactivateConsultantTwoFactorAuth_Should_returnNoContent_When_givenConsultantDoesNotExist()
+      throws Exception {
+
+    // when
+    this.mockMvc
+        .perform(
+            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
+        ).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void deactivateConsultantTwoFactorAuth_Should_returnUnauthorized_When_NoAuthorityValueIsSet()
+      throws Exception {
+
+    // when
+    this.mockMvc
+        .perform(
+            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
+        ).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockUser(authorities = {AuthorityValue.USER_DEFAULT})
+  void deactivateConsultantTwoFactorAuth_Should_returnForbidden_When_WrongAuthorityValueIsSet()
+      throws Exception {
+
+    // when
+    this.mockMvc
+        .perform(
+            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
+        ).andExpect(status().isForbidden());
+  }
 }

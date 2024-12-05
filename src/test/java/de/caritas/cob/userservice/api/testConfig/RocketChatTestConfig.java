@@ -1,5 +1,7 @@
 package de.caritas.cob.userservice.api.testConfig;
 
+import static java.util.Objects.nonNull;
+
 import com.mongodb.client.MongoClient;
 import de.caritas.cob.userservice.api.adapters.rocketchat.RocketChatClient;
 import de.caritas.cob.userservice.api.adapters.rocketchat.RocketChatCredentials;
@@ -12,13 +14,18 @@ import de.caritas.cob.userservice.api.adapters.rocketchat.dto.group.GroupRespons
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.DataDTO;
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.LoginResponseDTO;
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.MeDTO;
+import de.caritas.cob.userservice.api.adapters.rocketchat.dto.user.UserInfoResponseDTO;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
@@ -52,7 +59,7 @@ public class RocketChatTestConfig {
         var loginResponseDTO = new LoginResponseDTO();
         loginResponseDTO.setStatus("ok");
         var dataDTO = new DataDTO();
-        dataDTO.setUserId("user-id configured in " + RocketChatTestConfig.class.getName());
+        dataDTO.setUserId("LSPvm2naJQTA8Pk5L");
         dataDTO.setAuthToken(AUTH_TOKEN);
         var meDTO = new MeDTO();
         dataDTO.setMe(meDTO);
@@ -107,6 +114,24 @@ public class RocketChatTestConfig {
 
       @Override
       public void deleteUser(String rcUserId) {}
+
+      @Override
+      @Cacheable(key = "#chatUserId", value = "rocketChatUserCache")
+      public Optional<Map<String, Object>> findUserAndAddToCache(String chatUserId) {
+        return findUser(chatUserId);
+      }
+
+      @Override
+      public Optional<Map<String, Object>> findUser(String chatUserId) {
+        if(chatUserId.equals("LSPvm2naJQTA8Pk5L")){
+          var map = new HashMap<String, Object>();
+          map.put("id", chatUserId);
+          map.put("username", "userName");
+          map.put("displayName", "displayName");
+          return Optional.of(map);
+        }
+        return Optional.empty();
+      }
     };
   }
 }
