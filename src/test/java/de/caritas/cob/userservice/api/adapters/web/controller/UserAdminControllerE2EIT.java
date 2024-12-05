@@ -799,9 +799,8 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(
-            delete(DEACTIVATE_CONSULTANT_2FA + consultantId)
-        ).andExpect(status().isOk());
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + consultantId))
+        .andExpect(status().isOk());
   }
 
   @Test
@@ -811,9 +810,8 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(
-            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
-        ).andExpect(status().isNoContent());
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .andExpect(status().isNoContent());
   }
 
   @Test
@@ -822,9 +820,8 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(
-            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
-        ).andExpect(status().isUnauthorized());
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -834,8 +831,7 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(
-            delete(DEACTIVATE_CONSULTANT_2FA + "consultantId")
-        ).andExpect(status().isForbidden());
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .andExpect(status().isForbidden());
   }
 }

@@ -1,7 +1,5 @@
 package de.caritas.cob.userservice.api.testConfig;
 
-import static java.util.Objects.nonNull;
-
 import com.mongodb.client.MongoClient;
 import de.caritas.cob.userservice.api.adapters.rocketchat.RocketChatClient;
 import de.caritas.cob.userservice.api.adapters.rocketchat.RocketChatCredentials;
@@ -14,7 +12,6 @@ import de.caritas.cob.userservice.api.adapters.rocketchat.dto.group.GroupRespons
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.DataDTO;
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.LoginResponseDTO;
 import de.caritas.cob.userservice.api.adapters.rocketchat.dto.login.MeDTO;
-import de.caritas.cob.userservice.api.adapters.rocketchat.dto.user.UserInfoResponseDTO;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +22,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 @Slf4j
@@ -123,7 +119,7 @@ public class RocketChatTestConfig {
 
       @Override
       public Optional<Map<String, Object>> findUser(String chatUserId) {
-        if(chatUserId.equals("LSPvm2naJQTA8Pk5L")){
+        if (chatUserId.equals("LSPvm2naJQTA8Pk5L")) {
           var map = new HashMap<String, Object>();
           map.put("id", chatUserId);
           map.put("username", "userName");
