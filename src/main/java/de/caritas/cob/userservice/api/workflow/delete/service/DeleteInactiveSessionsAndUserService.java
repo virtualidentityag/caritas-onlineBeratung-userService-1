@@ -1,8 +1,5 @@
 package de.caritas.cob.userservice.api.workflow.delete.service;
 
-import static de.caritas.cob.userservice.api.helper.CustomLocalDateTime.nowInUtc;
-import static de.caritas.cob.userservice.api.workflow.delete.model.DeletionSourceType.ASKER;
-import static de.caritas.cob.userservice.api.workflow.delete.model.DeletionTargetType.ALL;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 import de.caritas.cob.userservice.api.model.Session;
@@ -31,8 +28,13 @@ public class DeleteInactiveSessionsAndUserService {
   private final @NonNull SessionRepository sessionRepository;
   private final @NonNull DeleteUserAccountService deleteUserAccountService;
   private final @NonNull WorkflowErrorMailService workflowErrorMailService;
+  private final @NonNull WorkflowErrorLogService workflowErrorLogService;
   private final @NonNull DeleteSessionService deleteSessionService;
   private final @NonNull InactivePrivateGroupsProvider inactivePrivateGroupsProvider;
+
+  private static final String USER_NOT_FOUND_REASON = "User could not be found.";
+  private static final String RC_SESSION_GROUP_NOT_FOUND_REASON =
+      "Session with rc group id could not be found.";
 
   /**
    * Deletes all inactive sessions and even the asker accounts, if there are no more active
@@ -49,13 +51,26 @@ public class DeleteInactiveSessionsAndUserService {
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
-    sendWorkflowErrorsMail(workflowErrors);
+    findWorkflowErrorByReason(workflowErrors);
   }
 
-  private void sendWorkflowErrorsMail(List<DeletionWorkflowError> workflowErrors) {
+  private void findWorkflowErrorByReason(List<DeletionWorkflowError> workflowErrors) {
     if (isNotEmpty(workflowErrors)) {
-      this.workflowErrorMailService.buildAndSendErrorMail(workflowErrors);
+      List<DeletionWorkflowError> rcSessionGroupNotFoundWorkflowErrors =
+          getSameReasonWorkflowErrors(workflowErrors, RC_SESSION_GROUP_NOT_FOUND_REASON);
+      List<DeletionWorkflowError> workflowErrorsExceptSessionGroupNotFound =
+          new ArrayList<>(workflowErrors);
+      workflowErrorsExceptSessionGroupNotFound.removeAll(rcSessionGroupNotFoundWorkflowErrors);
+      this.workflowErrorLogService.logWorkflowErrors(rcSessionGroupNotFoundWorkflowErrors);
+      this.workflowErrorMailService.buildAndSendErrorMail(workflowErrorsExceptSessionGroupNotFound);
     }
+  }
+
+  private static List<DeletionWorkflowError> getSameReasonWorkflowErrors(
+      List<DeletionWorkflowError> workflowErrors, String reason) {
+    return workflowErrors.stream()
+        .filter(error -> reason.equals(error.getReason()))
+        .collect(Collectors.toList());
   }
 
   private List<DeletionWorkflowError> performDeletionWorkflow(
@@ -68,14 +83,8 @@ public class DeleteInactiveSessionsAndUserService {
     user.ifPresentOrElse(
         u -> workflowErrors.addAll(deleteInactiveGroupsOrUser(userInactiveGroupEntry, u)),
         () ->
-            workflowErrors.add(
-                DeletionWorkflowError.builder()
-                    .deletionSourceType(ASKER)
-                    .deletionTargetType(ALL)
-                    .identifier(userInactiveGroupEntry.getKey())
-                    .reason("User could not be found.")
-                    .timestamp(nowInUtc())
-                    .build()));
+            workflowErrors.addAll(
+                performUserSessionDeletionForNonExistingUser(userInactiveGroupEntry.getValue())));
 
     return workflowErrors;
   }
@@ -84,11 +93,14 @@ public class DeleteInactiveSessionsAndUserService {
       Entry<String, List<String>> userInactiveGroupEntry, User user) {
 
     List<Session> userSessionList = sessionRepository.findByUser(user);
-
     if (allSessionsOfUserAreInactive(userInactiveGroupEntry, userSessionList)) {
       return deleteUserAccountService.performUserDeletion(user);
     }
+    return perfomUserSessionDeletion(userInactiveGroupEntry, userSessionList);
+  }
 
+  private List<DeletionWorkflowError> perfomUserSessionDeletion(
+      Entry<String, List<String>> userInactiveGroupEntry, List<Session> userSessionList) {
     return userInactiveGroupEntry.getValue().stream()
         .map(rcGroupId -> performSessionDeletion(rcGroupId, userSessionList))
         .flatMap(Collection::stream)
@@ -102,28 +114,39 @@ public class DeleteInactiveSessionsAndUserService {
 
   private List<DeletionWorkflowError> performSessionDeletion(
       String rcGroupId, List<Session> userSessionList) {
-
     List<DeletionWorkflowError> workflowErrors = new ArrayList<>();
-
     Optional<Session> session = findSessionInUserSessionList(rcGroupId, userSessionList);
-
     session.ifPresentOrElse(
         s -> workflowErrors.addAll(deleteSessionService.performSessionDeletion(s)),
         () ->
-            workflowErrors.add(
-                DeletionWorkflowError.builder()
-                    .deletionSourceType(ASKER)
-                    .deletionTargetType(ALL)
-                    .identifier(rcGroupId)
-                    .reason("Session with rc group id could not be found.")
-                    .timestamp(nowInUtc())
-                    .build()));
+            workflowErrors.addAll(
+                deleteSessionService.performRocketchatSessionDeletion(rcGroupId)));
 
+    return workflowErrors;
+  }
+
+  private List<DeletionWorkflowError> performUserSessionDeletionForNonExistingUser(
+      List<String> rcGroupIds) {
+    List<DeletionWorkflowError> workflowErrors = new ArrayList<>();
+    rcGroupIds.forEach(
+        rcGroupId ->
+            workflowErrors.addAll(performUserSessionDeletionForNonExistingUser(rcGroupId)));
+    return workflowErrors;
+  }
+
+  private Collection<? extends DeletionWorkflowError> performUserSessionDeletionForNonExistingUser(
+      String rcGroupId) {
+    List<DeletionWorkflowError> workflowErrors = new ArrayList<>();
+    Optional<Session> session = sessionRepository.findByGroupId(rcGroupId);
+    session.ifPresent(s -> workflowErrors.addAll(deleteSessionService.performSessionDeletion(s)));
     return workflowErrors;
   }
 
   private Optional<Session> findSessionInUserSessionList(
       String rcGroupId, List<Session> userSessionList) {
-    return userSessionList.stream().filter(s -> s.getGroupId().equals(rcGroupId)).findFirst();
+
+    return userSessionList.stream()
+        .filter(s -> s.getGroupId() != null && s.getGroupId().equals(rcGroupId))
+        .findFirst();
   }
 }

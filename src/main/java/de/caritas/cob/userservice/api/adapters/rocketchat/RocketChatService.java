@@ -135,6 +135,9 @@ public class RocketChatService implements MessageClient {
       "Could not get users list from Rocket.Chat";
   private static final String USER_LIST_GET_FIELD_SELECTION = "{\"_id\":1}";
   private static final Integer PAGE_SIZE = 100;
+  private static final String ERROR_ROOM_NOT_FOUND = "error-room-not-found";
+  private static final String COULD_NOT_REMOVE_USER_FROM_ROCKET_CHAT_GROUP =
+      "Could not remove user %s from Rocket.Chat group with id %s";
   private final LocalDateTime localDateTime1900 = LocalDateTime.of(1900, 1, 1, 0, 0);
 
   private final LocalDateTime localDateTimeFuture = nowInUtc().plusYears(1L);
@@ -652,13 +655,7 @@ public class RocketChatService implements MessageClient {
 
     GroupResponseDTO response;
     try {
-      RocketChatCredentials technicalUser = rcCredentialHelper.getTechnicalUser();
-      var header = getStandardHttpHeaders(technicalUser);
-      var body = new GroupRemoveUserBodyDTO(rcUserId, rcGroupId);
-      HttpEntity<GroupRemoveUserBodyDTO> request = new HttpEntity<>(body, header);
-
-      var url = rocketChatConfig.getApiUrl(ENDPOINT_GROUP_KICK);
-      response = restTemplate.postForObject(url, request, GroupResponseDTO.class);
+      response = tryRemoveUserFromGroup(rcUserId, rcGroupId);
 
     } catch (Exception ex) {
       log.error(
@@ -667,14 +664,26 @@ public class RocketChatService implements MessageClient {
           rcGroupId,
           ex);
       throw new RocketChatRemoveUserFromGroupException(
-          String.format(
-              "Could not remove user %s from Rocket.Chat group with id %s", rcUserId, rcGroupId));
+          String.format(COULD_NOT_REMOVE_USER_FROM_ROCKET_CHAT_GROUP, rcUserId, rcGroupId));
     }
 
     if (response != null && !response.isSuccess()) {
-      var error = "Could not remove user %s from Rocket.Chat group with id %s";
+      var error = COULD_NOT_REMOVE_USER_FROM_ROCKET_CHAT_GROUP;
       throw new RocketChatRemoveUserFromGroupException(String.format(error, rcUserId, rcGroupId));
     }
+  }
+
+  private GroupResponseDTO tryRemoveUserFromGroup(String rcUserId, String rcGroupId)
+      throws RocketChatUserNotInitializedException {
+    GroupResponseDTO response;
+    RocketChatCredentials technicalUser = rcCredentialHelper.getTechnicalUser();
+    var header = getStandardHttpHeaders(technicalUser);
+    var body = new GroupRemoveUserBodyDTO(rcUserId, rcGroupId);
+    HttpEntity<GroupRemoveUserBodyDTO> request = new HttpEntity<>(body, header);
+
+    var url = rocketChatConfig.getApiUrl(ENDPOINT_GROUP_KICK);
+    response = restTemplate.postForObject(url, request, GroupResponseDTO.class);
+    return response;
   }
 
   public boolean removeUserFromSession(String chatUserId, String chatId) {
@@ -794,6 +803,7 @@ public class RocketChatService implements MessageClient {
    * @return al members of the group
    * @deprecated use getChatUsers
    */
+  @Deprecated
   public List<GroupMemberDTO> getMembersOfGroup(String rcGroupId)
       throws RocketChatGetGroupMembersException {
 
@@ -1338,6 +1348,32 @@ public class RocketChatService implements MessageClient {
     } catch (HttpClientErrorException exception) {
       log.error("Saving room settings failed.", exception);
       return false;
+    }
+  }
+
+  public void removeUserFromGroupIgnoreGroupNotFound(String rcUserId, String rcGroupId)
+      throws RocketChatRemoveUserFromGroupException {
+    {
+      GroupResponseDTO response;
+      try {
+        response = tryRemoveUserFromGroup(rcUserId, rcGroupId);
+      } catch (Exception ex) {
+        if (ex.getMessage().contains(ERROR_ROOM_NOT_FOUND)) {
+          return;
+        }
+        log.error(
+            "Rocket.Chat Error: Could not remove user {} from Rocket.Chat group with id {}. Reason: ",
+            rcUserId,
+            rcGroupId,
+            ex);
+        throw new RocketChatRemoveUserFromGroupException(
+            String.format(COULD_NOT_REMOVE_USER_FROM_ROCKET_CHAT_GROUP, rcUserId, rcGroupId));
+      }
+
+      if (response != null && !response.isSuccess()) {
+        var error = COULD_NOT_REMOVE_USER_FROM_ROCKET_CHAT_GROUP;
+        throw new RocketChatRemoveUserFromGroupException(String.format(error, rcUserId, rcGroupId));
+      }
     }
   }
 }
