@@ -72,7 +72,6 @@ public class SecurityConfig implements WebMvcConfigurer {
             .addFilterBefore(new StatelessCsrfFilter(csrfSecurityProperties), CsrfFilter.class);
 
     httpSecurity = enableTenantFilterIfMultitenancyEnabled(httpSecurity);
-
     httpSecurity
         .sessionManagement(
             management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
