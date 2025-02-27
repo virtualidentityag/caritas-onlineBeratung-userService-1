@@ -203,7 +203,11 @@ public class SecurityConfig implements WebMvcConfigurer {
                     .hasAnyAuthority(CONSULTANT_UPDATE, TECHNICAL_DEFAULT)
                     .requestMatchers("/useradmin/2fa/{consultantId:" + UUID_PATTERN + "}")
                     .hasAnyAuthority(
-                        USER_ADMIN, SINGLE_TENANT_ADMIN, TENANT_ADMIN, RESTRICTED_AGENCY_ADMIN)
+                        USER_ADMIN,
+                        SINGLE_TENANT_ADMIN,
+                        TENANT_ADMIN,
+                        RESTRICTED_AGENCY_ADMIN,
+                        CONSULTANT_CREATE)
                     .requestMatchers("/useradmin", "/useradmin/**")
                     .hasAnyAuthority(USER_ADMIN, TECHNICAL_DEFAULT)
                     .requestMatchers("/users/consultants/search")

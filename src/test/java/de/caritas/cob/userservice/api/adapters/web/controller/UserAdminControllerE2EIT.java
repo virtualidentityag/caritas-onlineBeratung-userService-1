@@ -130,7 +130,6 @@ class UserAdminControllerE2EIT {
   @MockBean IdentityClient identityClient;
 
   @MockBean TenantService tenantService;
-
   private User user;
 
   @AfterEach
@@ -791,7 +790,7 @@ class UserAdminControllerE2EIT {
   }
 
   @Test
-  @WithMockUser(authorities = {AuthorityValue.CONSULTANT_CREATE})
+  @WithMockUser(authorities = {AuthorityValue.CONSULTANT_CREATE, AuthorityValue.USER_ADMIN})
   void deactivateConsultantTwoFactorAuth_Should_returnOk_When_requiredConsultantIsGiven()
       throws Exception {
     // given
@@ -804,13 +803,13 @@ class UserAdminControllerE2EIT {
   }
 
   @Test
-  @WithMockUser(authorities = {AuthorityValue.CONSULTANT_CREATE})
+  @WithMockUser(authorities = {AuthorityValue.USER_ADMIN})
   void deactivateConsultantTwoFactorAuth_Should_returnNoContent_When_givenConsultantDoesNotExist()
       throws Exception {
 
     // when
     this.mockMvc
-        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "e3f1c0a7-4d2b-45f6-9c8d-7a6e3bfa1d23"))
         .andExpect(status().isNoContent());
   }
 
@@ -820,7 +819,7 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "e3f1c0a7-4d2b-45f6-9c8d-7a6e3bfa1d23"))
         .andExpect(status().isUnauthorized());
   }
 
@@ -831,7 +830,7 @@ class UserAdminControllerE2EIT {
 
     // when
     this.mockMvc
-        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "consultantId"))
+        .perform(delete(DEACTIVATE_CONSULTANT_2FA + "e3f1c0a7-4d2b-45f6-9c8d-7a6e3bfa1d23"))
         .andExpect(status().isForbidden());
   }
 }
