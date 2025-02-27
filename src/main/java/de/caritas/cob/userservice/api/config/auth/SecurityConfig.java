@@ -201,7 +201,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         HttpMethod.PUT,
                         "/useradmin/consultants/{consultantId:" + UUID_PATTERN + "}/agencies")
                     .hasAnyAuthority(CONSULTANT_UPDATE, TECHNICAL_DEFAULT)
-                    .requestMatchers("/useradmin/2fa/{consultantId" + UUID_PATTERN + "}")
+                    .requestMatchers("/useradmin/2fa/{consultantId:" + UUID_PATTERN + "}")
                     .hasAnyAuthority(
                         USER_ADMIN, SINGLE_TENANT_ADMIN, TENANT_ADMIN, RESTRICTED_AGENCY_ADMIN)
                     .requestMatchers("/useradmin", "/useradmin/**")
