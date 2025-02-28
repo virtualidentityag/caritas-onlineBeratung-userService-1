@@ -82,6 +82,7 @@ class UserAdminControllerE2EIT {
   private static final String CSRF_VALUE = "test";
   private static final Cookie CSRF_COOKIE = new Cookie("csrfCookie", CSRF_VALUE);
   public static final int PAGE_SIZE = 10;
+  public static final int TEST = 10;
   @Autowired private MockMvc mockMvc;
 
   @Autowired private ObjectMapper objectMapper;
