@@ -3,7 +3,7 @@ package de.caritas.cob.userservice.api.admin.service.rocketchat;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -23,13 +23,13 @@ import de.caritas.cob.userservice.api.model.Session.SessionStatus;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@ExtendWith(MockitoExtension.class)
+@RunWith(MockitoJUnitRunner.class)
 public class RocketChatRemoveFromGroupOperationServiceTest {
 
   private RocketChatRemoveFromGroupOperationService removeService;
@@ -44,7 +44,7 @@ public class RocketChatRemoveFromGroupOperationServiceTest {
 
   @Mock private ConsultingTypeManager consultingTypeManager;
 
-  @BeforeEach
+  @Before
   public void setup() {
     Map<Session, List<Consultant>> sessionConsultants = new HashMap<>();
     sessionConsultants.put(session, singletonList(consultant));
@@ -133,7 +133,7 @@ public class RocketChatRemoveFromGroupOperationServiceTest {
 
     this.removeService.removeFromGroupOrRollbackOnFailure();
 
-    verify(this.rocketChatFacade, times(1)).removeUserFromGroup("rcId", "group");
+    verify(this.rocketChatFacade, times(1)).removeUserFromGroupIgnoreGroupNotFound("rcId", "group");
     verify(this.rocketChatFacade, never()).removeUserFromGroup("rcId", "feedback");
   }
 
@@ -149,7 +149,7 @@ public class RocketChatRemoveFromGroupOperationServiceTest {
         .thenReturn(singletonList(groupMemberDTO));
     doThrow(new RuntimeException(""))
         .when(this.rocketChatFacade)
-        .removeUserFromGroup(anyString(), anyString());
+        .removeUserFromGroupIgnoreGroupNotFound(anyString(), anyString());
     doThrow(new RuntimeException(""))
         .when(this.rocketChatFacade)
         .addUserToRocketChatGroup(anyString(), anyString());
@@ -172,7 +172,9 @@ public class RocketChatRemoveFromGroupOperationServiceTest {
     groupMemberDTO.set_id(this.consultant.getRocketChatId());
     when(this.rocketChatFacade.retrieveRocketChatMembers(any()))
         .thenReturn(singletonList(groupMemberDTO));
-    doThrow(new RuntimeException("")).when(this.rocketChatFacade).removeUserFromGroup(any(), any());
+    doThrow(new RuntimeException(""))
+        .when(this.rocketChatFacade)
+        .removeUserFromGroupIgnoreGroupNotFound(any(), any());
 
     try {
       this.removeService.removeFromGroupOrRollbackOnFailure();
